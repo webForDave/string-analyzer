@@ -51,7 +51,6 @@ def get_character_frequency_map(string: str):
             characters[i] = 1
     return characters
 
-print(get_character_frequency_map("Brave travelers return at twilight, tracing ancient terrain near tranquil rivers, breathing radiant air, hearing eternal rain, treating nature as a tender artist, narrating rare tales anew, creating radiant art that retains ancient traces, trailing after reappearing lanterns, reaching radiant terrain again, returning at twilight repeatedly, treating nature’s eternal rhythm as truth."))
 
 def return_string_properties(string: str):   
     return {
