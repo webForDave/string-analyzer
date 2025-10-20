@@ -10,14 +10,25 @@ from .properties import return_string_properties, get_string_hashlib
 def get_string(request):
     serializer = StringSerializer(data=request.data)
 
-    print(request.data)
-    if serializer.is_valid():
+    if not request.data or "value" not in request.data:
+        return Response({"error": "Invalid request body or missing 'value' field"}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save(id=get_string_hashlib(request.data["value"]))
-        response_data = serializer.data
+    if type(request.data["value"]) is not str:
+        return Response({"error": "Invalid data type for 'value' (must be string)"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        response_data["properties"] = return_string_properties(request.data["value"])
+    try:
+        string = String.objects.get(value=request.data["value"])
 
-        return Response(response_data, status=status.HTTP_201_CREATED)
-    else: 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if string:
+            return Response({"error": "String already exists in the system"}, status=status.HTTP_409_CONFLICT)
+        
+    except String.DoesNotExist:
+
+        if serializer.is_valid():
+
+            serializer.save(id=get_string_hashlib(request.data["value"]))
+            response_data = serializer.data
+
+            response_data["properties"] = return_string_properties(request.data["value"])
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
