@@ -4,5 +4,5 @@ from .models import String
 class StringSerializer(serializers.ModelSerializer):
     class Meta:
         model = String
-        fields = ["id", "value"]
-        read_only_fields = ["id"]
+        fields = ["id", "value", "properties", "length", "is_palindrome", "word_count", "sha256_hash", "character_frequency_map"]
+        read_only_fields = ["id", "properties", "length", "is_palindrome", "word_count", "sha256_hash", "character_frequency_map"]

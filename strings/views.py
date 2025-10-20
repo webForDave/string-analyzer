@@ -5,7 +5,6 @@ from rest_framework import status
 from .serializers import StringSerializer
 from .properties import return_string_properties, get_string_hashlib
 
-
 @api_view(["POST"])
 def get_string(request):
     serializer = StringSerializer(data=request.data)
@@ -26,9 +25,26 @@ def get_string(request):
 
         if serializer.is_valid():
 
-            serializer.save(id=get_string_hashlib(request.data["value"]))
-            response_data = serializer.data
+            id = get_string_hashlib(request.data["value"])
+            properties = return_string_properties(request.data["value"])
+            length = return_string_properties(request.data["value"])["length"]
+            is_palindrome = return_string_properties(request.data["value"])["is_palindrome"]
+            word_count = return_string_properties(request.data["value"])["word_count"]
+            sha256_hash = return_string_properties(request.data["value"])["sha256_hash"]
+            character_frequency_map = return_string_properties(request.data["value"])["character_frequency_map"]
 
-            response_data["properties"] = return_string_properties(request.data["value"])
+            serializer.save(
+                id=id,
+                length=length, 
+                is_palindrome=is_palindrome,
+                word_count=word_count,
+                sha256_hash=sha256_hash,
+                character_frequency_map=character_frequency_map,
+                properties=properties
+            )
+
+            response_data = {"id": id, "value": request.data["value"], "properties": properties}
+
+            # response_data["properties"] = return_string_properties(request.data["value"])
 
             return Response(response_data, status=status.HTTP_201_CREATED)
