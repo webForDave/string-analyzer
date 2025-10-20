@@ -2,11 +2,11 @@ from .models import String
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-from .serializers import StringSerializer
+from .serializers import StringSerializer, SingleStringSerializer
 from .properties import return_string_properties, get_string_hashlib
 
 @api_view(["POST"])
-def get_string(request):
+def analyze_string(request):
     serializer = StringSerializer(data=request.data)
 
     if not request.data or "value" not in request.data:
@@ -48,3 +48,24 @@ def get_string(request):
             # response_data["properties"] = return_string_properties(request.data["value"])
 
             return Response(response_data, status=status.HTTP_201_CREATED)
+        
+
+@api_view(["GET", "DELETE"])
+def get_string(request, string_value):
+    if request.method == "POST":
+        try:
+            string = String.objects.get(value=string_value)
+
+            serializer = SingleStringSerializer(string)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except String.DoesNotExist:
+            return Response({"error": "String does not exist in the system"}, status=status.HTTP_404_NOT_FOUND)
+        
+    if request.method == "DELETE":
+        try:
+            string = String.objects.get(value=string_value)
+            string.delete()
+
+            return Response({}, status=status.HTTP_204_NO_CONTENT)
+        except String.DoesNotExist:
+            return Response({"error": "String does not exist in the system"}, status=status.HTTP_404_NOT_FOUND)
