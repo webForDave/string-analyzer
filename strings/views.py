@@ -88,7 +88,7 @@ def strings_root(request):
 
         final_queryset = filterset.qs
         
-        serializer = StringSerializer(final_queryset, many=True)
+        serializer = SingleStringSerializer(final_queryset, many=True)
         
         filters_applied = {}
         valid_filters = filterset.filters.keys()
