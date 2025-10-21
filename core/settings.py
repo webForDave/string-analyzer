@@ -14,6 +14,9 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import dj_database_url
+DB_LIVE = os.environ.get("DB_LIVE")
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -81,8 +84,6 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 
 
-DB_LIVE = os.environ.get("DB_LIVE")
-
 if DB_LIVE in ["False", False]:
     DATABASES = {
         'default': {
@@ -92,14 +93,11 @@ if DB_LIVE in ["False", False]:
     }
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': "django.db.backends.postgresql",
-            "NAME": os.environ.get("DB_NAME"),
-            "USER": os.environ.get("DB_USER"),
-            "PASSWORD": os.environ.get("DB_PASSWORD"),
-            "HOST": os.environ.get("DB_HOST"),
-            "PORT": os.environ.get("DB_PORT")
-        }
+        'default': dj_database_url.config(
+            conn_max_age=600,
+            # Force SSL requirement for Railway's public endpoint
+            ssl_require=True 
+        )
     }
 
 # Password validation
