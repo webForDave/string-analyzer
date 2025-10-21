@@ -5,6 +5,9 @@ from . import views
 
 urlpatterns = [
     path('strings/filter-by-natural-language/', views.natural_language_filter_view, name='string-nl-filter'),
+    path('strings/filter-by-natural-language', views.natural_language_filter_view, name='string-nl-filter'), # canonical
     path('strings/', views.strings_root, name="strings_root"),
+    path('strings', views.strings_root, name="strings_root"), # canonical
     path('strings/<str:string_value>/', views.get_or_delete_string, name="get_string"),
+    path('strings/<str:string_value>', views.get_or_delete_string, name="get_string"), # canonical
 ]
