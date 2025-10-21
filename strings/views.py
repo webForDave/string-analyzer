@@ -4,6 +4,8 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from .serializers import StringSerializer, SingleStringSerializer
 from .properties import return_string_properties, get_string_hashlib
+from .filters import AnalyzedStringFilter
+from .utils import parse_natural_language_query
 import datetime
 
 @api_view(["GET", "DELETE"])
@@ -72,3 +74,83 @@ def strings_root(request):
                 response_data = {"id": id, "value": request.data["value"], "properties": properties, "created_at": timestamp}
 
                 return Response(response_data, status=status.HTTP_201_CREATED)
+
+    if request.method == "GET":
+        queryset = String.objects.all()
+
+        filterset = AnalyzedStringFilter(request.query_params, queryset=queryset)
+        
+        if not filterset.is_valid():
+            return Response(
+                {"detail": filterset.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        final_queryset = filterset.qs
+        
+        serializer = StringSerializer(final_queryset, many=True)
+        
+        filters_applied = {}
+        valid_filters = filterset.filters.keys()
+
+        for key, value in request.query_params.items():
+            if key in valid_filters: 
+                filters_applied[key] = value
+
+        return Response({
+            "data": serializer.data,
+            "count": final_queryset.count(),
+            "filters_applied": filters_applied
+        }, status=status.HTTP_200_OK)
+    
+
+@api_view(['GET'])
+def natural_language_filter_view(request):
+    query = request.query_params.get('query')
+    if not query:
+        return Response(
+            {"detail": "Missing 'query' parameter."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    original_query = query
+    
+    try:
+        parsed_filters = parse_natural_language_query(query)
+        
+        queryset = String.objects.all()
+        filterset = AnalyzedStringFilter(parsed_filters, queryset=queryset)
+        
+        if not filterset.is_valid():
+            raise ValueError(f"Query parsed but resulted in conflicting or invalid filter values: {filterset.errors}")
+
+        final_queryset = filterset.qs
+        
+    except ValueError as e:
+        error_message = str(e)
+        if "Conflicting" in error_message:
+            return Response(
+                {"detail": error_message},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+        else:
+            return Response(
+                {"detail": error_message}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    except Exception as e:
+        return Response(
+            {"detail": f"An unexpected server error occurred: {e}"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        
+    serializer = SingleStringSerializer(final_queryset, many=True)
+
+    return Response({
+        "data": serializer.data,
+        "count": final_queryset.count(),
+        "interpreted_query": {
+            "original": original_query,
+            "parsed_filters": parsed_filters
+        }
+    }, status=status.HTTP_200_OK)
