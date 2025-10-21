@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from .serializers import StringSerializer, SingleStringSerializer
 from .properties import return_string_properties, get_string_hashlib
+import datetime
 
 @api_view(["GET", "DELETE"])
 def get_or_delete_string(request, string_value):
@@ -28,62 +29,6 @@ def get_or_delete_string(request, string_value):
 
 @api_view(["GET", "POST"])
 def strings_root(request):
-    if request.method == "GET":
-        strings_qs = String.objects.all()
-        filters_applied = {}
-
-        is_palindrome = request.query_params.get("is_palindrome")
-        min_length = request.query_params.get("min_length")
-        max_length = request.query_params.get("max_length")
-        word_count = request.query_params.get("word_count")
-        contains_character = request.query_params.get("contains_character")
-
-        if is_palindrome is not None:
-            val = is_palindrome.lower()
-            if val not in ("true", "false"):
-                return Response(
-                    {"error": "is_palindrome must be 'true' or 'false'."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            bool_val = val == "true"
-            strings_qs = strings_qs.filter(is_palindrome=bool_val)
-            filters_applied["is_palindrome"] = bool_val
-
-        if min_length:
-            if not min_length.isdigit():
-                return Response({"error": "min_length must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
-            strings_qs = strings_qs.filter(length__gte=int(min_length))
-            filters_applied["min_length"] = int(min_length)
-
-        if max_length:
-            if not max_length.isdigit():
-                return Response({"error": "max_length must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
-            strings_qs = strings_qs.filter(length__lte=int(max_length))
-            filters_applied["max_length"] = int(max_length)
-
-        if word_count:
-            if not word_count.isdigit():
-                return Response({"error": "word_count must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
-            strings_qs = strings_qs.filter(word_count=int(word_count))
-            filters_applied["word_count"] = int(word_count)
-
-        if contains_character:
-            if len(contains_character) != 1:
-                return Response({"error": "contains_character must be a single character."}, status=status.HTTP_400_BAD_REQUEST)
-            strings_qs = strings_qs.filter(value__icontains=contains_character)
-            filters_applied["contains_character"] = contains_character
-
-        serializer = SingleStringSerializer(strings_qs, many=True)
-
-        return Response(
-            {
-                "data": serializer.data,
-                "count": strings_qs.count(),
-                "filters_applied": filters_applied,
-            },
-            status=status.HTTP_200_OK,
-        )
-    
     if request.method == "POST":
         serializer = StringSerializer(data=request.data)
 
@@ -110,6 +55,8 @@ def strings_root(request):
                 word_count = return_string_properties(request.data["value"])["word_count"]
                 sha256_hash = return_string_properties(request.data["value"])["sha256_hash"]
                 character_frequency_map = return_string_properties(request.data["value"])["character_frequency_map"]
+                timestamp = datetime.datetime.utcnow().isoformat() + "Z"
+
 
                 serializer.save(
                     id=id,
@@ -118,9 +65,10 @@ def strings_root(request):
                     word_count=word_count,
                     sha256_hash=sha256_hash,
                     character_frequency_map=character_frequency_map,
-                    properties=properties
+                    properties=properties,
+                    created_at=timestamp
                 )
 
-                response_data = {"id": id, "value": request.data["value"], "properties": properties}
+                response_data = {"id": id, "value": request.data["value"], "properties": properties, "created_at": timestamp}
 
                 return Response(response_data, status=status.HTTP_201_CREATED)

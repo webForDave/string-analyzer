@@ -9,6 +9,7 @@ class String(models.Model):
     word_count = models.IntegerField()
     sha256_hash = models.CharField(max_length=70)
     character_frequency_map = models.JSONField()
+    created_at = models.DateTimeField()
 
     def __str__(self):
         return self.value
